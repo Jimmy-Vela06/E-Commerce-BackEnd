@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const { Category, Product } = require("../../models");
-const { update } = require("../../models/ProductTag");
 
 // The `/api/categories` endpoint
 
@@ -9,12 +8,7 @@ router.get("/", async (req, res) => {
   // be sure to include its associated Products
   try {
     const categoryData = await Category.findAll({
-      include: [
-        {
-          model: Product,
-          attributes: ["id", "product_name", "price", "stock", "category_id"],
-        },
-      ],
+      include: [Product],
     });
     if (!categoryData) {
       res.status(404).json({ message: "CATEGORIES NOT FOUND 😰" });
@@ -27,21 +21,15 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   // find one category by its `id` value
+  // be sure to include its associated Products
   try {
-    const categoryId = await Category.findByPk(req.params.id, {
-      // be sure to include its associated Products
-      include: [
-        {
-          model: Product,
-          attributes: ["product_name", "price", "stock"],
-        },
-      ],
-    });
+    const categoryID = await Category.findByPk(req.params.id);
 
-    if (!categoryId) {
-      res.status(404).json({ message: "ID CATEGORIES NOT FOUND 🫣" });
+    if (!categoryID) {
+      res.status(404).json({ message: "CATEGORIES ID NOT FOUND 🫣" });
     }
-    res.status(200).json(categoryId);
+
+    res.status(200).json(categoryID);
   } catch (err) {
     res.status(500).json(err);
   }
@@ -50,12 +38,20 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   // create a new category
   try {
-    const categoryNew = await Category.create({
-      category_name: req.body.category_name,
+    const updateCategory = await Category.create(req.body, {
+      where: {
+        id: req.params.id,
+      },
     });
-    res.status(200).json(categoryNew);
+    if (!updateCategory) {
+      res.status(404).json({ message: "CATEGORY CANNOT BE CREATED 🫠" });
+      return;
+    }
+
+    return res.status(200).json(updateCategory);
   } catch (err) {
     res.status(400).json(err);
+    console.log(err);
   }
 });
 
@@ -68,7 +64,7 @@ router.put("/:id", async (req, res) => {
       },
     });
     if (!updateCategory) {
-      res.status(404).json({ message: "ID HAS NO CATEGORY 🫠" });
+      res.status(404).json({ message: "CATEGORY CANNOT BE UPDATED 🫠" });
       return;
     } else {
       return res.status(200).json(update);

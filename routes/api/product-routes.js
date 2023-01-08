@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const { Product, Category, Tag, ProductTag } = require("../../models");
+const { findByPk } = require("../../models/Product");
 
 // The `/api/products` endpoint
 
@@ -8,21 +9,15 @@ router.get("/", async (req, res) => {
   // find all products
   // be sure to include its associated Category and Tag data
   try {
-    const allProduct = await Product.findAll({
-      includes: [
-        Category,
-        {
-          model: Tag,
-          through: ProductTag,
-        },
-      ],
+    const product = await Product.findAll({
+      include: [Category, { model: Tag, through: ProductTag }],
     });
 
-    if (!allProduct) {
-      res.status(404).json({ message: "NO PRODUCT FOUND 😵‍💫" });
+    if (!product) {
+      res.status(404).json("PRODUCT NOT FOUND 😖");
       return;
     }
-    res.status(200).json(allProduct);
+    res.status(200).json(product);
   } catch (err) {
     res.status(500).json(err);
   }
@@ -34,20 +29,8 @@ router.get("/:id", async (req, res) => {
   // be sure to include its associated Category and Tag data
   try {
     const productId = await Product.findByPk(req.params.id, {
-      include: [
-        {
-          model: Category,
-          attributes: ["id", "category_name"],
-        },
-        {
-          model: Tag,
-          attributes: ["id", "tag_name"],
-          through: ProductTag,
-          as: "TAGS",
-        },
-      ],
+      include: [Category, { model: Tag, through: ProductTag }],
     });
-
     if (!productId) {
       res.status(404).json("PRODUCT ID NOT FOUND 😱");
       return;
@@ -136,12 +119,10 @@ router.delete("/:id", async (req, res) => {
   // delete one product by its `id` value
   try {
     const productDelete = await Product.destroy({
-      where: {
-        id: req.params.id,
-      },
+      where: { id: req.params.id },
     });
     if (!productDelete) {
-      res.status(404).json("PRODUCT WITH THIS ID NOT DELETED 😯");
+      res.status(404).json("PRODUCT ID NOT FOUND, CANNOT DELTET 😥");
       return;
     }
     res.status(200).json(productDelete);
